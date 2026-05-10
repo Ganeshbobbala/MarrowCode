@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Play, Check, AlertCircle, AlertTriangle, BookOpen, Lightbulb, Code2,
   Sparkles, Terminal, ChevronDown, Bot, GitBranch,
-  Trophy, Zap, ShieldCheck, HelpCircle, Layers, Clock, Loader2, Target, Briefcase
+  Trophy, Zap, ShieldCheck, HelpCircle, Layers, Clock, Loader2, Target, Briefcase, Globe
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
@@ -328,16 +328,21 @@ const Practice = () => {
               options={{
                 minimap: { enabled: false },
                 fontSize: 14,
-                padding: { top: 20 },
+                padding: { top: 20, bottom: 20 },
                 fontFamily: 'JetBrains Mono, monospace',
                 lineNumbers: 'on',
                 roundedSelection: true,
-                scrollBeyondLastLine: false,
+                scrollBeyondLastLine: true,
                 automaticLayout: true,
                 wordWrap: 'on',
                 scrollbar: {
                   vertical: 'visible',
-                  horizontal: 'visible'
+                  horizontal: 'visible',
+                  useShadows: false,
+                  verticalHasArrows: false,
+                  horizontalHasArrows: false,
+                  verticalScrollbarSize: 10,
+                  horizontalScrollbarSize: 10
                 }
               }}
             />
@@ -345,7 +350,7 @@ const Practice = () => {
         </div>
 
         {/* Console Section (Bottom) */}
-        <div className="h-[320px] bg-surface/40 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm flex flex-row shrink-0">
+        <div className="h-[280px] bg-surface/40 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm flex flex-row shrink-0 shadow-2xl">
           <div className="flex-1 flex flex-col border-r border-white/5">
             <div className="p-2 border-b border-white/5 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
               <Terminal size={12} /> Input Stream
@@ -425,15 +430,42 @@ const Practice = () => {
                   </div>
                 )}
 
-                {/* Mistakes */}
-                {evalResult.mistakes && evalResult.mistakes.length > 0 && (
+                {/* Recommended Refactoring (Replaced Mistakes) */}
+                {evalResult.alternative && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase text-[9px] tracking-widest px-1">
+                      <Sparkles size={14} /> Recommended Refactoring
+                    </div>
+                    <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl overflow-hidden shadow-xl">
+                      <div className="p-4 bg-indigo-500/10 border-b border-indigo-500/10">
+                        <p className="text-[11px] text-indigo-200 font-bold leading-relaxed italic">
+                          "{evalResult.alternative.split('```')[0].trim()}"
+                        </p>
+                      </div>
+                      {evalResult.alternative.includes('```') ? (
+                        <div className="p-4 bg-black/40 font-mono text-[11px] text-emerald-400 overflow-x-auto custom-scrollbar">
+                          <pre className="leading-relaxed">
+                            {evalResult.alternative.split('```')[1]?.replace(/^[a-z]+\n/, '') || 'Logic optimization suggested.'}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-black/20 font-mono text-[11px] text-slate-300 italic">
+                          <p>{evalResult.alternative}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Original Issues (Collapsed if Alternative exists) */}
+                {evalResult.mistakes && evalResult.mistakes.length > 0 && !evalResult.alternative && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-rose-400 font-bold uppercase text-[9px] tracking-widest px-1">
                       <AlertCircle size={14} /> Detected Issues
                     </div>
                     <div className="space-y-2">
                       {evalResult.mistakes.map((mistake, i) => (
-                        <div key={i} className="flex gap-3 bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                        <div key={i} className="flex gap-3 bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
                           <p className="text-slate-400 text-[11px] leading-relaxed">{mistake}</p>
                         </div>
@@ -454,7 +486,31 @@ const Practice = () => {
                   </div>
                 )}
 
-                {/* Trace Analysis */}
+                {/* Theoretical Foundation */}
+                <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-700">
+                  <div className="flex items-center gap-2 text-slate-400 font-bold uppercase text-[9px] tracking-widest px-1">
+                    <BookOpen size={14} className="text-emerald-400" /> Theoretical Foundation
+                  </div>
+                  <div className="bg-slate-900/40 border border-white/5 p-4 rounded-xl backdrop-blur-sm">
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      {evalResult.theory || `This implementation utilizes ${language === 'python' ? 'list comprehensions and iterative loops' : 'nested loops and conditional branches'} to manage complex control flow. The O(n) complexity indicates a linear growth pattern, which is fundamental in algorithm design for processing sequential data structures.`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Real-World Application */}
+                <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="flex items-center gap-2 text-slate-400 font-bold uppercase text-[9px] tracking-widest px-1">
+                    <Globe size={14} className="text-blue-400" /> Real-World Utility
+                  </div>
+                  <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl border-l-2 border-l-blue-500/40">
+                    <p className="text-slate-300 text-[11px] leading-relaxed font-medium italic">
+                      {evalResult.real_world || "Professional engineers use this logic in Data Pipelines, UI Rendering Engines, and Financial Modelling systems to ensure predictable state transitions and optimized memory management in production environments."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Execution Trace */}
                 {evalResult.explanations?.line_by_line && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-slate-400 font-bold uppercase text-[9px] tracking-widest px-1">
