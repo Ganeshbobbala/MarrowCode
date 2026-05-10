@@ -152,7 +152,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Blind Spot Analytics */}
+        {/* Blind Spot Analytics (Moved to top/left) */}
         <div className="col-span-1 bg-surface/80 border border-white/5 rounded-2xl flex flex-col p-6">
           <div className="flex items-center gap-2 mb-4">
              <Target size={20} className="text-indigo-400" />
@@ -180,87 +180,87 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Reviews Panel */}
+        {/* Recent Reviews Panel (Moved to bottom/right) */}
         <div className="col-span-2 bg-surface/80 border border-white/5 rounded-2xl flex flex-col pt-6 pb-2">
-        <div className="px-6 flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-white">Recent Reviews</h3>
-          <button
-            onClick={() => navigate('/history')}
-            className="text-[13px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
-          >
-            View All <ArrowRight size={14} />
-          </button>
-        </div>
-
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-14 gap-3 text-slate-500">
-            <Loader2 size={20} className="animate-spin" /> Loading reviews…
-          </div>
-        )}
-
-        {/* Error */}
-        {!loading && error && (
-          <div className="flex flex-col items-center py-12 gap-3">
-            <p className="text-rose-400 text-sm font-medium">{error}</p>
-            <button onClick={fetchHistory} className="btn-ghost text-sm border border-slate-700">
-              <RotateCcw size={14} /> Retry
+          <div className="px-6 flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-white">Recent Reviews</h3>
+            <button
+              onClick={() => navigate('/history')}
+              className="text-[13px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              View All <ArrowRight size={14} />
             </button>
           </div>
-        )}
 
-        {/* Empty */}
-        {!loading && !error && recent.length === 0 && (
-          <div className="flex flex-col items-center py-14 gap-4">
-            <Sparkles size={36} className="text-slate-700" />
-            <p className="text-slate-500 font-medium">No reviews yet — start your first one!</p>
-            <button onClick={() => navigate('/new')} className="btn-primary text-sm px-5 py-2">
-              <Plus size={15} /> New Review
-            </button>
-          </div>
-        )}
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center py-14 gap-3 text-slate-500">
+              <Loader2 size={20} className="animate-spin" /> Loading reviews…
+            </div>
+          )}
 
-        {/* List */}
-        {!loading && !error && recent.length > 0 && (
-          <div className="flex flex-col">
-            {recent.map((review, idx) => {
-              const score = review.scores?.quality ?? 0;
-              const date  = formatDate(review.timestamp);
-              const lang  = review.language ?? 'unknown';
-              return (
-                <div
-                  key={review.id ?? idx}
-                  onClick={() => navigate('/results', { state: { result: review } })}
-                  className="flex items-center justify-between py-4 px-6 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <Code2 size={20} className="text-primary stroke-[2]" />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[15px] font-bold text-slate-100 capitalize">{lang === 'cpp' ? 'C++' : lang} review</span>
-                      <div className="flex text-[11px] font-semibold items-center gap-2.5">
-                        <span className={`px-2 py-0.5 rounded-full border ${langBadge(lang)}`}>{lang === 'cpp' ? 'C++' : lang}</span>
-                        <span className="text-slate-500 flex items-center gap-1">
-                          <Clock size={12} className="stroke-[2.5]" /> {date}
-                        </span>
-                        <span className="text-slate-600">{review.feedback?.length ?? 0} issues</span>
+          {/* Error */}
+          {!loading && error && (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <p className="text-rose-400 text-sm font-medium">{error}</p>
+              <button onClick={fetchHistory} className="btn-ghost text-sm border border-slate-700">
+                <RotateCcw size={14} /> Retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty */}
+          {!loading && !error && recent.length === 0 && (
+            <div className="flex flex-col items-center py-14 gap-4">
+              <Sparkles size={36} className="text-slate-700" />
+              <p className="text-slate-500 font-medium">No reviews yet — start your first one!</p>
+              <button onClick={() => navigate('/new')} className="btn-primary text-sm px-5 py-2">
+                <Plus size={15} /> New Review
+              </button>
+            </div>
+          )}
+
+          {/* List */}
+          {!loading && !error && recent.length > 0 && (
+            <div className="flex flex-col">
+              {recent.map((review, idx) => {
+                const score = review.scores?.quality ?? 0;
+                const date  = formatDate(review.timestamp);
+                const lang  = review.language ?? 'unknown';
+                return (
+                  <div
+                    key={review.id ?? idx}
+                    onClick={() => navigate('/results', { state: { result: review } })}
+                    className="flex items-center justify-between py-4 px-6 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <Code2 size={20} className="text-primary stroke-[2]" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[15px] font-bold text-slate-100 capitalize">{lang === 'cpp' ? 'C++' : lang} review</span>
+                        <div className="flex text-[11px] font-semibold items-center gap-2.5">
+                          <span className={`px-2 py-0.5 rounded-full border ${langBadge(lang)}`}>{lang === 'cpp' ? 'C++' : lang}</span>
+                          <span className="text-slate-500 flex items-center gap-1">
+                            <Clock size={12} className="stroke-[2.5]" /> {date}
+                          </span>
+                          <span className="text-slate-600">{review.feedback?.length ?? 0} issues</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-6 shrink-0">
-                    <span className={`font-black font-mono text-xl ${scoreColor(score)}`}>{score}</span>
-                    <span className="text-[11px] font-bold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full">
-                      completed
-                    </span>
-                    <ArrowRight size={16} className="text-slate-600" />
+                    <div className="flex items-center gap-6 shrink-0">
+                      <span className={`font-black font-mono text-xl ${scoreColor(score)}`}>{score}</span>
+                      <span className="text-[11px] font-bold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full">
+                        completed
+                      </span>
+                      <ArrowRight size={16} className="text-slate-600" />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Ration Distribution</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="logo" data-i18n="appName">Digital Ration Distribution</div>
+        <div class="language-switcher">
+            <label for="language-select" data-i18n="languageLabel">Language:</label>
+            <select id="language-select" onchange="setLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="te">తెలుగు</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="ta">தமிழ்</option>
+                <option value="mr">मराठी</option>
+                <option value="ml">മലയാളം</option>
+            </select>
+        </div>
+    </header>
+
+    <div id="news-ticker"
+        style="background:#f39c12; color:white; padding:10px; text-align:center; font-weight:bold; font-size:0.9rem;">
+        LIVE NEWS: Welcome to Digital Ration Distribution System
+    </div>
+
+    <div class="container">
+        <div class="video-demo">
+            <h2 data-i18n="welcome">Welcome</h2>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <h3 style="margin-bottom: 20px;" data-i18n="chooseLoginType">Choose Login Type</h3>
+            <div class="btn-group">
+                <a href="customer-login.html" class="btn btn-customer" data-i18n="customerLogin">Customer Login</a>
+                <a href="admin-login.html" class="btn btn-admin" data-i18n="adminLogin">Admin Login</a>
+            </div>
+        </div>
+        <div class="contact-section card glass-card" style="margin-top: 40px; text-align: center;">
+            <h3 data-i18n="contactUs">Contact Us</h3>
+            <p data-i18n="phoneText">📞 Phone: +91 99887 76655</p>
+            <p data-i18n="emailText">📧 Email: support@digitalration.gov.in</p>
+            <p data-i18n="officeText">📍 Office: Food & Civil Supplies Dept, Hyderabad</p>
+        </div>
+    </div>
+
+    <!-- AI Chatbot Widget -->
+    <div id="ai-chatbot" class="chatbot-collapsed">
+        <div class="chatbot-header">
+            <span>🤖 Ration AI Assistant</span>
+            <button onclick="toggleChatbot()">✖</button>
+        </div>
+        <div id="chatbot-messages" class="chatbot-body">
+            <div class="msg bot">Hello! I am your AI assistant. How can I help you today?</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chat-input" placeholder="Ask a question...">
+            <button onclick="sendChatMessage()">Send</button>
+        </div>
+    </div>
+    <div id="chatbot-launcher" onclick="toggleChatbot()">
+        🤖
+    </div>
+
+    <script src="translations.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>

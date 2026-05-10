@@ -1,0 +1,8 @@
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..91012e1
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,2 @@
++# Digital Ration Distribution
++Digital Ration Distribution is a web-based application that allows users to view and book slots instantly. It prevents double booking, updates availability in real time, and supports authentication, notifications, and efficient schedule management for both users and administrators.

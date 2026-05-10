@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Play, Check, AlertCircle, BookOpen, Lightbulb, Code2,
+  Play, Check, AlertCircle, AlertTriangle, BookOpen, Lightbulb, Code2,
   Sparkles, Terminal, ChevronDown, Bot, GitBranch,
   Trophy, Zap, ShieldCheck, HelpCircle, Layers, Clock, Loader2, Target, Briefcase
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import API_BASE from '../api_config';
 import mermaid from 'mermaid';
+import aiMentorImg from '../assets/ai_mentor.png';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -61,6 +62,7 @@ const Practice = () => {
     { id: 1, name: 'Main.py', content: BOILERPLATES.python, language: 'python' }
   ]);
   const [activeFileId, setActiveFileId] = useState(1);
+  // We'll keep insights on the right and console at the bottom
   const activeFile = files.find(f => f.id === activeFileId) || files[0];
 
   useEffect(() => {
@@ -173,11 +175,11 @@ const Practice = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100vh-120px)] animate-in fade-in duration-700 pb-10 lg:pb-0 overflow-visible lg:overflow-hidden">
       
-      {/* 1. LEFT SIDEBAR: Explorer + Mentor */}
-      <div className="w-full lg:w-72 flex flex-col gap-4 shrink-0 h-auto lg:h-full">
+      {/* 1. LEFT SIDEBAR: Explorer */}
+      <div className="w-full lg:w-64 flex flex-col gap-4 shrink-0 h-auto lg:h-full">
         
         {/* Explorer */}
-        <div className="h-[280px] bg-surface/30 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-md border-r border-indigo-500/10">
+        <div className="h-full bg-surface/30 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-md border-r border-indigo-500/10">
           <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
               <Layers size={14} className="text-primary" /> Explorer
@@ -240,298 +242,248 @@ const Practice = () => {
             ))}
           </div>
         </div>
-
-          {/* Mentor Results */}
-          <div className="flex-1 bg-surface/40 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-sm min-h-0">
-            <div className="p-3 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-emerald-500" />
-                <span className="text-xs font-bold text-white tracking-tight">AI Insights</span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-3 space-y-5 custom-scrollbar text-[12px] scroll-smooth">
-              {/* Mission Header */}
-              <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-3 backdrop-blur-sm relative overflow-hidden group animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Sparkles size={32} />
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={14} className="text-indigo-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider text-white">
-                    Universal Logic Mission
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed font-bold">
-                  Goal: {code.toLowerCase().includes('even') ? "Mastering Even/Odd Logic." : 
-                        code.toLowerCase().includes('age') ? "Mastering Eligibility Gates." : 
-                        "Perfecting Custom Logic Architecture."}
-                </p>
-                <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
-                  The AI is currently analyzing your specific snippet for theoretical depth and real-world application.
-                </p>
-              </div>
-
-              {!evalResult && !isSubmitting && (
-                <div className="h-full flex flex-col items-center justify-center text-center p-4 gap-3 opacity-30">
-                  <HelpCircle size={30} className="text-indigo-500" />
-                  <p className="text-slate-500 text-[10px]">Submit code to unlock mentor analytics.</p>
-                </div>
-              )}
-
-              {evalResult && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
-                  {/* Status Banner */}
-                  <div className={`p-3 rounded-xl border flex items-center justify-between ${evalResult.status === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-100' : 'bg-rose-500/5 border-rose-500/20 text-rose-100'}`}>
-                    <p className="leading-relaxed font-semibold text-[11px]">{evalResult.message}</p>
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${evalResult.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                      {evalResult.status}
-                    </span>
-                  </div>
-
-                  {/* Real-World Application */}
-                  {evalResult.explanations?.real_world_use_case && (
-                    <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-2xl relative overflow-hidden group">
-                      <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold uppercase text-[9px] tracking-widest">
-                        <Briefcase size={12} /> Real-World Application
-                      </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed italic">{evalResult.explanations.real_world_use_case}</p>
-                    </div>
-                  )}
-
-                  {/* Alternative Methodology */}
-                  {evalResult.alternative && (
-                    <div className="bg-indigo-500/5 border border-indigo-500/10 p-3 rounded-2xl relative overflow-hidden group">
-                      <div className="flex items-center gap-2 mb-2 text-indigo-300 font-bold uppercase text-[9px] tracking-widest">
-                        <Lightbulb size={12} /> Alternative Methodology
-                      </div>
-                      <p className="text-slate-400 text-[11px] leading-relaxed">{evalResult.alternative}</p>
-                    </div>
-                  )}
-
-                  {/* Mistakes/Issues */}
-                  {evalResult.mistakes && evalResult.mistakes.length > 0 && (
-                    <div className="space-y-2">
-                       <div className="flex items-center gap-2 text-rose-400 font-bold uppercase text-[9px] tracking-widest px-1">
-                        <AlertCircle size={12} /> Detected Issues
-                      </div>
-                      <div className="space-y-1.5">
-                        {evalResult.mistakes.map((mistake, i) => (
-                          <div key={i} className="flex gap-2 bg-rose-500/5 border border-rose-500/10 p-2.5 rounded-xl">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0 opacity-50" />
-                            <p className="text-slate-400 text-[11px] leading-tight">{mistake}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Trace Analysis */}
-                  {evalResult.explanations?.line_by_line && evalResult.explanations.line_by_line.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-slate-400 font-bold uppercase text-[9px] tracking-widest px-1">
-                        <Layers size={12} /> Trace Analysis
-                      </div>
-                      <div className="space-y-1.5 px-0.5">
-                        {evalResult.explanations.line_by_line.map((step, i) => (
-                          <div key={i} className="flex gap-3 items-center bg-slate-950/40 p-2 rounded-xl border border-white/5 group hover:bg-slate-900/60 transition-colors">
-                            <span className="text-[10px] font-mono text-slate-700 font-black min-w-[12px] text-center select-none group-hover:text-primary transition-colors">
-                              {i + 1}
-                            </span>
-                            <p className="text-slate-300 text-[11px] font-medium leading-none tracking-tight">
-                              {step}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Diagram */}
-                  {evalResult.explanations?.diagram && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-primary font-bold uppercase text-[9px] tracking-widest px-1">
-                        <GitBranch size={12} /> Logic Flow-Chart
-                      </div>
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <Mermaid chart={evalResult.explanations.diagram} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Theory */}
-                  {evalResult.explanations?.theoretical_concepts && evalResult.explanations.theoretical_concepts.length > 0 && (
-                    <div className="bg-slate-900/40 border border-white/5 p-3 rounded-2xl">
-                      <div className="flex items-center gap-2 mb-2 text-slate-100 font-bold uppercase text-[9px] tracking-widest">
-                        <Target size={12} /> Core Theory
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {evalResult.explanations.theoretical_concepts.map((concept, i) => (
-                          <span key={i} className="bg-slate-800/80 border border-white/10 px-2 py-0.5 rounded text-[10px] text-slate-300">
-                            {concept}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-        </div>
       </div>
 
-      {/* 2. MAIN: Editor & Console */}
+      {/* 2. MAIN WORKSPACE: Editor (Top) + Console (Bottom) */}
       <div className="flex-1 flex flex-col gap-4 min-w-0 h-auto lg:h-full">
         
-        {/* Top bar for Editor */}
-        <div className="bg-surface/40 border border-white/5 rounded-2xl p-3 flex items-center justify-between backdrop-blur-sm px-5">
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2 bg-slate-900/50 border border-white/5 rounded-lg px-3 py-1.5 focus-within:ring-1 ring-primary transition-all">
-              <Code2 size={16} className="text-primary" />
-              <select
-                value={language}
-                onChange={e => {
-                  const newLang = e.target.value;
-                  setLanguage(newLang);
-                  setFiles(prev => prev.map(f => {
-                    if (f.id === activeFileId) {
-                      const oldBoilerplate = BOILERPLATES[f.language] || "";
-                      if (f.content === oldBoilerplate || !f.content.trim()) {
-                        return { ...f, language: newLang, content: BOILERPLATES[newLang] || "" };
+        {/* Editor Section */}
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          {/* Top bar for Editor */}
+          <div className="bg-surface/40 border border-white/5 rounded-2xl p-3 flex items-center justify-between backdrop-blur-sm px-5">
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center gap-2 bg-slate-900/50 border border-white/5 rounded-lg px-3 py-1.5 focus-within:ring-1 ring-primary transition-all">
+                <Code2 size={16} className="text-primary" />
+                <select
+                  value={language}
+                  onChange={e => {
+                    const newLang = e.target.value;
+                    setLanguage(newLang);
+                    setFiles(prev => prev.map(f => {
+                      if (f.id === activeFileId) {
+                        const oldBoilerplate = BOILERPLATES[f.language] || "";
+                        if (f.content === oldBoilerplate || !f.content.trim()) {
+                          return { ...f, language: newLang, content: BOILERPLATES[newLang] || "" };
+                        }
+                        return { ...f, language: newLang };
                       }
-                      return { ...f, language: newLang };
-                    }
-                    return f;
-                  }));
-                }}
-                className="bg-transparent border-none text-sm font-bold text-slate-200 outline-none cursor-pointer appearance-none pr-4"
-              >
-                <option value="python" className="bg-slate-900 text-white">Python</option>
-                <option value="java" className="bg-slate-900 text-white">Java</option>
-                <option value="javascript" className="bg-slate-900 text-white">JS</option>
-                <option value="cpp" className="bg-slate-900 text-white">C++</option>
-                <option value="c" className="bg-slate-900 text-white">C</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 bg-slate-900/50 border border-white/5 rounded-lg px-3 py-1.5 focus-within:ring-1 ring-primary transition-all">
-              <Bot size={16} className="text-rose-400" />
-              <select
-                value={persona}
-                onChange={e => setPersona(e.target.value)}
-                className="bg-transparent border-none text-sm font-bold text-slate-200 outline-none cursor-pointer appearance-none pr-4"
-              >
-                <option value="standard" className="bg-slate-900 text-white">Standard AI</option>
-                <option value="linus" className="bg-slate-900 text-white">Linus Mode</option>
-                <option value="zen" className="bg-slate-900 text-white">Zen Master</option>
-                <option value="startup" className="bg-slate-900 text-white">Startup Bro</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-tighter">Est. Efficiency</span>
-              <span className="text-xs font-mono font-bold text-emerald-400">{complexity}</span>
-            </div>
-            <button
-              onClick={runCode}
-              disabled={isSubmitting}
-              className="bg-primary hover:bg-primaryHover disabled:opacity-50 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
-            >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
-              Submit
-            </button>
-          </div>
-        </div>
-
-        {/* Editor Area */}
-        <div className="bg-[#1e1e1e] border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative group h-[450px] lg:h-auto lg:flex-1">
-          <div className="absolute top-4 right-4 z-20 flex gap-2">
-            <span className="bg-indigo-600/80 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black border border-white/20 uppercase tracking-widest text-white flex items-center gap-1 shadow-lg">
-              <Zap size={10} fill="currentColor" /> {language.toUpperCase()} ENGINE ACTIVE
-            </span>
-          </div>
-          <Editor
-            height="100%"
-            language={language === 'cpp' ? 'cpp' : language}
-            theme="vs-dark"
-            value={code}
-            onChange={handleCodeChange}
-            loading={<div className="flex items-center justify-center h-full text-indigo-400 animate-pulse font-bold tracking-widest text-xs">INITIALIZING ENGINE...</div>}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              padding: { top: 20 },
-              fontFamily: 'JetBrains Mono, monospace',
-              lineNumbers: 'on',
-              roundedSelection: true,
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              wordWrap: 'on',
-              scrollbar: {
-                vertical: 'visible',
-                horizontal: 'visible'
-              }
-            }}
-          />
-        </div>
-
-        {/* Console / Stdin */}
-        <div className="h-auto lg:h-72 grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4 mb-4 lg:mb-0">
-          <div className="bg-black/40 border border-white/5 rounded-2xl flex flex-col backdrop-blur-sm group/stdin">
-            <div className="p-3 border-b border-white/5 flex items-center gap-4 text-[11px] font-bold uppercase tracking-widest">
-              <div className="flex items-center gap-2 text-slate-500"><Terminal size={14} /> Input Stream</div>
-
-              {/* Dynamic Prompt Detector */}
-              {(() => {
-                const promptMatch = code.match(/input\s*\(\s*["'](.*?)["']\s*\)/);
-                if (promptMatch && promptMatch[1]) {
-                  return (
-                    <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-indigo-400 animate-in zoom-in duration-300">
-                      <Target size={12} className="animate-pulse" />
-                      <span className="truncate max-w-[200px]">{promptMatch[1]}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-            {(() => {
-              const promptMatch = code.match(/input\s*\(\s*["'](.*?)["']\s*\)/);
-              const placeholderText = (promptMatch && promptMatch[1]) || "Feed data to stdin...";
-
-              return (
-                <textarea
-                  className="flex-1 bg-transparent p-4 text-xs font-mono text-amber-200 outline-none resize-none placeholder-slate-700"
-                  placeholder={placeholderText}
-                  value={stdin}
-                  onChange={e => setStdin(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (!isSubmitting) runCode();
-                    }
+                      return f;
+                    }));
                   }}
-                />
-              );
-            })()}
+                  className="bg-transparent border-none text-sm font-bold text-slate-200 outline-none cursor-pointer appearance-none pr-4"
+                >
+                  <option value="python" className="bg-slate-900 text-white">Python</option>
+                  <option value="java" className="bg-slate-900 text-white">Java</option>
+                  <option value="javascript" className="bg-slate-900 text-white">JS</option>
+                  <option value="cpp" className="bg-slate-900 text-white">C++</option>
+                  <option value="c" className="bg-slate-900 text-white">C</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 bg-slate-900/50 border border-white/5 rounded-lg px-3 py-1.5 focus-within:ring-1 ring-primary transition-all">
+                <Bot size={16} className="text-rose-400" />
+                <select
+                  value={persona}
+                  onChange={e => setPersona(e.target.value)}
+                  className="bg-transparent border-none text-sm font-bold text-slate-200 outline-none cursor-pointer appearance-none pr-4"
+                >
+                  <option value="standard" className="bg-slate-900 text-white">Standard AI</option>
+                  <option value="linus" className="bg-slate-900 text-white">Linus Mode</option>
+                  <option value="zen" className="bg-slate-900 text-white">Zen Master</option>
+                  <option value="startup" className="bg-slate-900 text-white">Startup Bro</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="hidden md:flex flex-col items-end mr-2">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-tighter">Est. Efficiency</span>
+                <span className="text-xs font-mono font-bold text-emerald-400">{complexity}</span>
+              </div>
+              <button
+                onClick={runCode}
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primaryHover disabled:opacity-50 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
+              >
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
+                Submit
+              </button>
+            </div>
           </div>
-          <div className="bg-black/60 border border-white/5 rounded-2xl flex flex-col backdrop-blur-sm">
-            <div className="p-3 border-b border-white/5 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-              <div className="flex items-center gap-2">< Zap size={14} className="text-amber-500" /> Output</div>
+
+          {/* Editor Area */}
+          <div className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-2xl overflow-hidden shadow-2xl relative group min-h-[300px]">
+            <div className="absolute top-4 right-4 z-20 flex gap-2">
+              <span className="bg-indigo-600/80 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black border border-white/20 uppercase tracking-widest text-white flex items-center gap-1 shadow-lg">
+                <Zap size={10} fill="currentColor" /> {language.toUpperCase()} ENGINE ACTIVE
+              </span>
+            </div>
+            <Editor
+              height="100%"
+              language={language === 'cpp' ? 'cpp' : language}
+              theme="vs-dark"
+              value={code}
+              onChange={handleCodeChange}
+              loading={<div className="flex items-center justify-center h-full text-indigo-400 animate-pulse font-bold tracking-widest text-xs">INITIALIZING ENGINE...</div>}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                padding: { top: 20 },
+                fontFamily: 'JetBrains Mono, monospace',
+                lineNumbers: 'on',
+                roundedSelection: true,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                wordWrap: 'on',
+                scrollbar: {
+                  vertical: 'visible',
+                  horizontal: 'visible'
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Console Section (Bottom) */}
+        <div className="h-[320px] bg-surface/40 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm flex flex-row shrink-0">
+          <div className="flex-1 flex flex-col border-r border-white/5">
+            <div className="p-2 border-b border-white/5 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+              <Terminal size={12} /> Input Stream
+            </div>
+            <textarea
+              className="flex-1 bg-black/20 p-4 text-xs font-mono text-amber-200 outline-none resize-none placeholder-slate-800"
+              placeholder="Feed data to stdin..."
+              value={stdin}
+              onChange={e => setStdin(e.target.value)}
+            />
+          </div>
+          <div className="flex-[3] flex flex-col">
+            <div className="p-2 border-b border-white/5 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
+              <div className="flex items-center gap-2"><Zap size={12} className="text-amber-500" /> System Output</div>
               {output && (
                 <span className={`px-2 py-0.5 rounded ${output.exit_code === 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
                   EXIT {output.exit_code}
                 </span>
               )}
             </div>
-            <div className="flex-1 p-4 text-xs font-mono overflow-y-auto whitespace-pre-wrap">
-              {isSubmitting && <div className="text-indigo-400 animate-pulse">Processing submission...</div>}
+            <div className="flex-1 p-4 text-xs font-mono overflow-y-auto whitespace-pre-wrap bg-black/40 custom-scrollbar">
+              {isSubmitting && <div className="text-indigo-400 animate-pulse font-bold italic">Executing code...</div>}
               {output?.stdout && <div className="text-slate-300">{output.stdout}</div>}
               {output?.stderr && <div className="text-rose-400/90">{output.stderr}</div>}
-              {!output && !isSubmitting && <div className="text-slate-700 font-italic text-[11px]">System idle. Awaiting compilation.</div>}
+              {!output && !isSubmitting && <div className="text-slate-800 italic">System idle.</div>}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. RIGHT SIDEBAR: AI Insights */}
+      <div className="w-full lg:w-[450px] flex flex-col gap-4 shrink-0 h-auto lg:h-full">
+        <div className="h-full bg-surface/30 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-md">
+          <div className="p-4 border-b border-white/5 flex items-center gap-2 bg-black/20">
+            <Sparkles size={14} className="text-primary" />
+            <div className="text-[10px] font-black uppercase tracking-widest text-white">AI Insights</div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar animate-in slide-in-from-right-4 duration-500">
+            {/* Logic Mission */}
+            <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-4 backdrop-blur-sm relative overflow-hidden group">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-indigo-400" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider text-white">Logic Mission</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed font-bold">
+                Goal: {code.toLowerCase().includes('even') ? "Mastering Even/Odd Logic." : 
+                      code.toLowerCase().includes('age') ? "Mastering Eligibility Gates." : 
+                      "Perfecting Custom Logic Architecture."}
+              </p>
+            </div>
+
+            {!evalResult && !isSubmitting && (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4 opacity-30">
+                <Bot size={40} className="text-indigo-500" />
+                <p className="text-slate-500 text-[11px] font-bold">Submit your code to activate the AI Mentor.</p>
+              </div>
+            )}
+
+            {evalResult && (
+              <div className="space-y-6">
+                {/* Status */}
+                <div className={`p-4 rounded-xl border flex items-center justify-between ${evalResult.status === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-100' : 'bg-rose-500/5 border-rose-500/20 text-rose-100'}`}>
+                  <p className="leading-relaxed font-bold text-[11px]">{evalResult.message}</p>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${evalResult.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                    {evalResult.status}
+                  </span>
+                </div>
+
+                {/* AI Mentor Image */}
+                {evalResult.mistakes && evalResult.mistakes.length > 0 && (
+                  <div className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl relative group">
+                    <img src={aiMentorImg} alt="AI Mentor" className="w-full h-40 object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                      <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Logic Analysis Active</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mistakes */}
+                {evalResult.mistakes && evalResult.mistakes.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold uppercase text-[9px] tracking-widest px-1">
+                      <AlertCircle size={14} /> Detected Issues
+                    </div>
+                    <div className="space-y-2">
+                      {evalResult.mistakes.map((mistake, i) => (
+                        <div key={i} className="flex gap-3 bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                          <p className="text-slate-400 text-[11px] leading-relaxed">{mistake}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Execution Error */}
+                {output?.stderr && (
+                  <div className="space-y-3 animate-in shake duration-500">
+                    <div className="flex items-center gap-2 text-rose-500 font-bold uppercase text-[9px] tracking-widest px-1">
+                      <AlertTriangle size={14} /> Critical Error
+                    </div>
+                    <div className="bg-rose-950/30 border border-rose-500/20 p-4 rounded-xl backdrop-blur-md">
+                      <p className="text-rose-300 font-mono text-[11px] leading-tight break-all">{output.stderr}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Trace Analysis */}
+                {evalResult.explanations?.line_by_line && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-slate-400 font-bold uppercase text-[9px] tracking-widest px-1">
+                      <Layers size={14} /> Execution Trace
+                    </div>
+                    <div className="space-y-1.5">
+                      {evalResult.explanations.line_by_line.map((step, i) => (
+                        <div key={i} className="flex gap-3 items-center bg-slate-950/40 p-3 rounded-xl border border-white/5 transition-all hover:bg-slate-900/60">
+                          <span className="text-[10px] font-mono text-slate-700 font-black min-w-[12px] text-center">{i + 1}</span>
+                          <p className="text-slate-300 text-[11px] font-medium leading-none">{step}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Diagram */}
+                {evalResult.explanations?.diagram && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-primary font-bold uppercase text-[9px] tracking-widest px-1">
+                      <GitBranch size={14} /> Logic Flow
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-2 overflow-hidden">
+                      <Mermaid chart={evalResult.explanations.diagram} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
