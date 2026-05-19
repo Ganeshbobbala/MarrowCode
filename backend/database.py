@@ -37,11 +37,15 @@ class TableClient:
             response.raise_for_status()
             return response.json()
 
-    def select(self, query: str = "*"):
+    def select(self, query: str = "*", filters: dict = None):
         # Basic select. For ordering, we add params.
         with httpx.Client() as client:
             # We sort by timestamp descending by default for history
             params = {"select": query, "order": "timestamp.desc"}
+            if filters:
+                for key, val in filters.items():
+                    params[key] = f"eq.{val}"
+            
             response = client.get(self.url, params=params, headers=self.headers)
             response.raise_for_status()
             return response.json()

@@ -6,6 +6,7 @@ import {
   Plus, Code2, TrendingUp, AlertTriangle,
   CheckCircle2, ArrowRight, Clock, Loader2, Sparkles, RotateCcw, Target
 } from 'lucide-react';
+import { getUserId } from '../utils/user';
 const langBadge = (lang) => {
   const map = {
     python:     'bg-indigo-500/20 text-indigo-400 border-indigo-500/20',
@@ -68,7 +69,10 @@ const Dashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE}/history`);
+      const userId = getUserId();
+      const res = await axios.get(`${API_BASE}/history`, {
+        params: { user_id: userId }
+      });
       // newest first
       const list = (res.data?.history ?? []).slice().reverse();
       setReviews(list);

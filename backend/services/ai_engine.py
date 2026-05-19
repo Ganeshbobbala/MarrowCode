@@ -11,6 +11,10 @@ def analyze_code_with_ai(code: str, language: str) -> dict:
     feedback = []
     deductions = 0  # points to deduct from the base quality score
     nested = False  # Track complexity universally where applicable
+    globals_count = 0
+    code_lower = code.lower()
+    alternative = "Your logic looks optimal for this scope!"
+    refactored_code = code
 
     # ─── Python-specific analysis ──────────────────────────────────────────────
     if language.lower() == "python":
@@ -328,15 +332,25 @@ def analyze_code_with_ai(code: str, language: str) -> dict:
 
     explanations["diagram"] = diagram
 
-    # ─── Alternative Program Suggester ─────────────────────────────────────────
-    alternative = "No specific alternative found."
-    if "?" in code and ":" in code:
-        alternative = "Your code already uses the concise TERNARY operator. An alternative would be using a standard IF-ELSE block."
-    elif "if" in code and "else" in code:
-        alternative = "Your code uses IF-ELSE. You can shorten it using the TERNARY OPERATOR: `result = (condition) ? valueA : valueB;`"
-    
-    if "for " in code and (language.lower() == "python"):
-        alternative = "Since this is Python, a LIST COMPREHENSION could be cleaner: `[x for x in list if condition]`"
+    # ─── Code Vibe Analysis ────────────────────────────────────────────────────
+    vibe = {"mood": "Confident", "color": "emerald", "icon": "ShieldCheck"}
+    if "try" in code_lower and "except" in code_lower:
+        vibe = {"mood": "Anxious", "color": "amber", "icon": "AlertCircle", "reason": "Heavy reliance on error handling suggests defensive uncertainty."}
+    elif globals_count > 2 or "var " in code:
+        vibe = {"mood": "Lazy", "color": "rose", "icon": "Clock", "reason": "Excessive global state or legacy keywords suggests shortcut-taking."}
+    elif nested:
+        vibe = {"mood": "Aggressive", "color": "indigo", "icon": "Zap", "reason": "Nested loops indicate a 'brute force' approach to complexity."}
+    elif "class " in code_lower and "def __init__" in code_lower:
+        vibe = {"mood": "Sophisticated", "color": "primary", "icon": "Crown", "reason": "Strong encapsulation and OOP patterns detected."}
+
+    # ─── Blind Spot Discovery ────────────────────────────────────────────────
+    blind_spots = []
+    if "try" not in code_lower and ("input" in code_lower or "open" in code_lower):
+        blind_spots.append("Unsafe IO: You perform input/output without error boundaries.")
+    if language.lower() == "java" and "null" not in code_lower and "." in code_lower:
+        blind_spots.append("Null Safety: You are calling methods without checking for null pointers.")
+    if "for" in code_lower and "else" not in code_lower and language.lower() == "python":
+        blind_spots.append("For-Else: You might be missing Python's unique loop-completion logic.")
 
     return {
         "feedback": feedback,
@@ -347,5 +361,7 @@ def analyze_code_with_ai(code: str, language: str) -> dict:
             "performance": performance,
         },
         "explanations": explanations,
-        "alternative": alternative
+        "alternative": alternative,
+        "vibe": vibe,
+        "blind_spots": blind_spots
     }

@@ -1,9 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Code2, Sparkles } from 'lucide-react';
+import { Code2, Sparkles, LayoutDashboard, History, User } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { getUserId } from '../utils/user';
 
 const Navbar = () => {
+  const userId = getUserId();
+  
   return (
     <header className="flex justify-between items-center w-full py-4 px-8 border-b border-white/5 bg-background">
       {/* Brand logo left */}

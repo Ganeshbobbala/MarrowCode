@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Play, Check, AlertCircle, AlertTriangle, BookOpen, Lightbulb, Code2,
-  Sparkles, Terminal, ChevronDown, Bot, GitBranch,
-  Trophy, Zap, ShieldCheck, HelpCircle, Layers, Clock, Loader2, Target, Briefcase, Globe
+  Sparkles, Terminal, ChevronDown, Bot, GitBranch, Plus,
+  Trophy, Zap, ShieldCheck, HelpCircle, Layers, Clock, Loader2, Maximize2, Minimize2, Trash2, Crown, FastForward, History as HistoryIcon, User, Globe, RotateCcw
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import API_BASE from '../api_config';
 import mermaid from 'mermaid';
 import aiMentorImg from '../assets/ai_mentor.png';
+import { getUserId } from '../utils/user';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -57,11 +58,30 @@ const Practice = () => {
   const [concepts, setConcepts] = useState([]);
   const [selectedConcept, setSelectedConcept] = useState(null);
   const [stdin, setStdin] = useState('');
+  const [showNewFileModal, setShowNewFileModal] = useState(false);
+  const [newFileData, setNewFileData] = useState({ name: '', language: 'python' });
+  const [showHint, setShowHint] = useState(true);
 
-  const [files, setFiles] = useState([
-    { id: 1, name: 'Main.py', content: BOILERPLATES.python, language: 'python' }
-  ]);
-  const [activeFileId, setActiveFileId] = useState(1);
+  const [files, setFiles] = useState(() => {
+    const saved = localStorage.getItem('practice_files');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, name: 'Main.py', content: BOILERPLATES.python, language: 'python' }
+    ];
+  });
+  const [activeFileId, setActiveFileId] = useState(() => {
+    const saved = localStorage.getItem('practice_active_file_id');
+    return saved ? parseInt(saved) : 1;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('practice_files', JSON.stringify(files));
+  }, [files]);
+
+  useEffect(() => {
+    localStorage.setItem('practice_active_file_id', activeFileId.toString());
+  }, [activeFileId]);
+
+  const [activeTab, setActiveTab] = useState('code');
   // We'll keep insights on the right and console at the bottom
   const activeFile = files.find(f => f.id === activeFileId) || files[0];
 
@@ -90,6 +110,14 @@ const Practice = () => {
     }
   }, [activeFileId, activeFile]);
 
+  const insightsRef = useRef(null);
+
+  useEffect(() => {
+    if (evalResult && insightsRef.current) {
+      insightsRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [evalResult]);
+
   // Update file content when code changes in editor
   const handleCodeChange = (newCode) => {
     setCode(newCode);
@@ -111,20 +139,25 @@ const Practice = () => {
     setEditingFileId(null);
   };
 
-  const addFile = () => {
+  const createNewFile = () => {
+    if (!newFileData.name.trim()) return;
+    
     const newId = Math.max(...files.map(f => f.id), 0) + 1;
     const extensions = { python: 'py', java: 'java', javascript: 'js', cpp: 'cpp', c: 'c' };
-    const ext = extensions[language] || 'txt';
+    const ext = extensions[newFileData.language] || 'txt';
+    const fileName = newFileData.name.includes('.') ? newFileData.name : `${newFileData.name}.${ext}`;
+    
     const newFile = {
       id: newId,
-      name: `Untitled_${newId}.${ext}`,
-      content: BOILERPLATES[language] || "",
-      language: language
+      name: fileName,
+      content: BOILERPLATES[newFileData.language] || "",
+      language: newFileData.language
     };
+    
     setFiles([...files, newFile]);
     setActiveFileId(newId);
-    // Auto-start renaming for new files
-    setTimeout(() => startRenaming(newFile), 100);
+    setShowNewFileModal(false);
+    setNewFileData({ name: '', language: 'python' });
   };
 
   const deleteFile = (id) => {
@@ -139,10 +172,12 @@ const Practice = () => {
     setEvalResult(null);
     try {
       // 1. Run the code
+      const userId = getUserId();
       const runRes = await axios.post(`${API_BASE}/run`, {
         code,
         language: language.toLowerCase(),
-        stdin
+        stdin,
+        user_id: userId
       });
       setOutput(runRes.data);
 
@@ -152,7 +187,8 @@ const Practice = () => {
           code,
           language: language.toLowerCase(),
           mode, persona, stdin,
-          concept_id: selectedConcept?.id
+          concept_id: selectedConcept?.id,
+          user_id: userId
         });
         setEvalResult(evalRes.data);
       } catch (evalErr) {
@@ -184,14 +220,47 @@ const Practice = () => {
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
               <Layers size={14} className="text-primary" /> Explorer
             </div>
-            <button
-              onClick={addFile}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-primary transition-all hover:scale-110 active:scale-95"
-              title="Create New File"
-            >
-              <Zap size={14} fill="currentColor" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  if (window.confirm("Reset workspace? All files will be deleted.")) {
+                    localStorage.removeItem('practice_files');
+                    localStorage.removeItem('practice_active_file_id');
+                    window.location.reload();
+                  }
+                }}
+                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-500 hover:text-rose-400 transition-all"
+                title="Reset Workspace"
+              >
+                <RotateCcw size={14} />
+              </button>
+              <button
+                onClick={() => setShowNewFileModal(true)}
+                className="p-1.5 hover:bg-white/10 rounded-lg text-primary transition-all hover:scale-110 active:scale-95 flex items-center gap-1"
+                title="Create New File"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
+          
+          {/* Hint Section */}
+          {showHint && (
+            <div className="mx-2 mt-2 p-3 bg-primary/10 border border-primary/20 rounded-xl relative animate-in slide-in-from-top-2">
+              <button 
+                onClick={() => setShowHint(false)}
+                className="absolute top-1 right-1 text-slate-500 hover:text-white"
+              >
+                ×
+              </button>
+              <div className="flex items-start gap-2">
+                <HelpCircle size={14} className="text-primary mt-0.5 shrink-0" />
+                <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+                  <span className="text-white font-bold">Pro Tip:</span> Create multiple files to practice different concepts simultaneously. Use the <Zap size={8} className="inline text-amber-400" /> Submit button to analyze your code!
+                </p>
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
             {files.map(file => (
               <div
@@ -389,7 +458,10 @@ const Practice = () => {
             <div className="text-[10px] font-black uppercase tracking-widest text-white">AI Insights</div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar animate-in slide-in-from-right-4 duration-500">
+          <div 
+            ref={insightsRef}
+            className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar animate-in slide-in-from-right-4 duration-500"
+          >
             {/* Logic Mission */}
             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-4 backdrop-blur-sm relative overflow-hidden group">
               <div className="flex items-center gap-2 mb-2">
@@ -397,11 +469,26 @@ const Practice = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-wider text-white">Logic Mission</h3>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed font-bold">
-                Goal: {code.toLowerCase().includes('even') ? "Mastering Even/Odd Logic." : 
-                      code.toLowerCase().includes('age') ? "Mastering Eligibility Gates." : 
+                Goal: {activeFile.content.toLowerCase().includes('even') ? "Mastering Even/Odd Logic." : 
+                      activeFile.content.toLowerCase().includes('age') ? "Mastering Eligibility Gates." : 
+                      activeFile.content.toLowerCase().includes('fact') ? "Optimizing Recursive Factorials." :
+                      activeFile.content.toLowerCase().includes('for') ? "Enhancing Iteration Efficiency." :
+                      activeFile.content.toLowerCase().includes('class') ? "Architecting OOP Structures." :
                       "Perfecting Custom Logic Architecture."}
               </p>
+              <div className="mt-3 pt-3 border-t border-indigo-500/20 flex gap-2">
+                <HelpCircle size={12} className="text-indigo-400 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                  <span className="text-white font-bold not-italic">What is this?</span> MarroeCode analyzes your code to define a <span className="text-indigo-300">Logic Mission</span>. This helps you focus on specific architectural goals like optimizing performance or mastering complex conditionals.
+                </p>
+              </div>
             </div>
+            {isSubmitting && (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4">
+                <Loader2 size={40} className="text-primary animate-spin" />
+                <p className="text-slate-400 text-[11px] font-bold animate-pulse">AI Mentor is analyzing your architecture...</p>
+              </div>
+            )}
 
             {!evalResult && !isSubmitting && (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4 opacity-30">
@@ -412,12 +499,62 @@ const Practice = () => {
 
             {evalResult && (
               <div className="space-y-6">
-                {/* Status */}
-                <div className={`p-4 rounded-xl border flex items-center justify-between ${evalResult.status === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-100' : 'bg-rose-500/5 border-rose-500/20 text-rose-100'}`}>
-                  <p className="leading-relaxed font-bold text-[11px]">{evalResult.message}</p>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${evalResult.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                    {evalResult.status}
-                  </span>
+                
+                {/* 1. Code Vibe Analysis */}
+                {evalResult.vibe && (
+                  <div className={`bg-${evalResult.vibe.color}-500/10 border border-${evalResult.vibe.color}-500/20 rounded-2xl p-4 relative overflow-hidden`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {evalResult.vibe.icon === 'ShieldCheck' && <ShieldCheck size={14} className="text-emerald-400" />}
+                        {evalResult.vibe.icon === 'AlertCircle' && <AlertCircle size={14} className="text-amber-400" />}
+                        {evalResult.vibe.icon === 'Clock' && <Clock size={14} className="text-rose-400" />}
+                        {evalResult.vibe.icon === 'Crown' && <Crown size={14} className="text-primary" />}
+                        {evalResult.vibe.icon === 'Zap' && <Zap size={14} className="text-indigo-400" />}
+                        <h3 className="text-[10px] font-black uppercase tracking-wider text-white">Code Vibe: {evalResult.vibe.mood}</h3>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full bg-${evalResult.vibe.color}-500 animate-pulse`} />
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                      {evalResult.vibe.reason}
+                    </p>
+                  </div>
+                )}
+
+                {/* 2. Blind Spot Discovery */}
+                {evalResult.blind_spots && evalResult.blind_spots.length > 0 && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertCircle size={14} className="text-rose-400" />
+                      <h3 className="text-[10px] font-black uppercase tracking-wider text-white">Blind Spots Detected</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {evalResult.blind_spots.map((spot, i) => (
+                        <div key={i} className="flex gap-2 items-start bg-black/20 p-2 rounded-lg border border-white/5">
+                          <span className="text-rose-400 text-[10px] font-bold">#0{i+1}</span>
+                          <p className="text-[10px] text-slate-300 leading-tight">{spot}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Mentor Response & Time Travel */}
+                <div className="bg-surface/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-primary font-bold uppercase text-[9px] tracking-widest px-1">
+                      <Bot size={14} /> Mentor Analysis
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${evalResult.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                      {evalResult.status}
+                    </span>
+                  </div>
+                  
+                  <div className="p-5 space-y-4">
+                    <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                      {evalResult.message}
+                    </div>
+
+                  </div>
                 </div>
 
                 {/* AI Mentor Image */}
@@ -544,6 +681,84 @@ const Practice = () => {
         </div>
       </div>
 
+
+      {/* 4. MODALS */}
+      {showNewFileModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#1a1a2e] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-primary/10 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                  <Plus size={20} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight">Create New File</h3>
+                  <p className="text-xs text-slate-500 font-medium">Choose your workspace setup</p>
+                </div>
+              </div>
+              <button onClick={() => setShowNewFileModal(false)} className="text-slate-500 hover:text-white transition-colors">
+                ×
+              </button>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">File Name</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. MyAlgorithm"
+                  autoFocus
+                  value={newFileData.name}
+                  onChange={e => setNewFileData({...newFileData, name: e.target.value})}
+                  className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-primary/50 transition-all font-mono shadow-inner"
+                />
+              </div>
+              
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Select Language</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'python', name: 'Python', color: 'text-amber-400', icon: 'py' },
+                    { id: 'java', name: 'Java', color: 'text-rose-400', icon: 'java' },
+                    { id: 'javascript', name: 'JS', color: 'text-yellow-400', icon: 'js' },
+                    { id: 'cpp', name: 'C++', color: 'text-blue-400', icon: 'cpp' },
+                    { id: 'c', name: 'C', color: 'text-slate-400', icon: 'c' }
+                  ].map(lang => (
+                    <button
+                      key={lang.id}
+                      onClick={() => setNewFileData({...newFileData, language: lang.id})}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                        newFileData.language === lang.id 
+                        ? 'bg-primary/20 border-primary/40 text-white shadow-lg' 
+                        : 'bg-black/20 border-white/5 text-slate-400 hover:border-white/10'
+                      }`}
+                    >
+                      <span className="text-xs font-bold">{lang.name}</span>
+                      <span className={`text-[10px] font-mono font-black ${lang.color}`}>{lang.icon}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 bg-black/20 border-t border-white/5 flex gap-3">
+              <button 
+                onClick={() => setShowNewFileModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl border border-white/5 text-slate-400 font-bold text-sm hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={createNewFile}
+                disabled={!newFileData.name.trim()}
+                className="flex-[2] bg-primary hover:bg-primaryHover disabled:opacity-50 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> Create Workspace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

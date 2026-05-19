@@ -7,6 +7,7 @@ import {
   Loader2, Sparkles, RotateCcw, Clock,
   CheckCircle2, AlertCircle, AlertTriangle
 } from 'lucide-react';
+import { getUserId } from '../utils/user';
 
 
 
@@ -49,7 +50,10 @@ const History = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE}/history`);
+      const userId = getUserId();
+      const res = await axios.get(`${API_BASE}/history`, {
+        params: { user_id: userId }
+      });
       const list = (res.data?.history ?? []).slice().reverse();
       setReviews(list);
     } catch {
@@ -179,6 +183,11 @@ const History = () => {
                     <span className="text-white font-semibold text-[15px] capitalize">{lang === 'cpp' ? 'C++' : lang} review</span>
                     <div className="flex items-center gap-2.5 text-xs font-medium flex-wrap">
                       <span className={`px-2.5 py-0.5 rounded-full border ${langBadge(lang)}`}>{lang === 'cpp' ? 'C++' : lang}</span>
+                      {review.is_practice && (
+                        <span className="px-2.5 py-0.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 flex items-center gap-1">
+                          <Sparkles size={10} /> Practice
+                        </span>
+                      )}
                       <span className="text-slate-500 flex items-center gap-1">
                         <Clock size={11} /> {date}
                       </span>

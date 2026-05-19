@@ -4,6 +4,7 @@ import axios from 'axios';
 import API_BASE from '../api_config';
 import Editor from '@monaco-editor/react';
 import { ArrowLeft, Upload, GitBranch, Sparkles, ChevronDown, CheckCircle2, Loader2 } from 'lucide-react';
+import { getUserId } from '../utils/user';
 
 const NewReview = () => {
     const navigate = useNavigate();
@@ -19,9 +20,11 @@ const NewReview = () => {
         setIsAnalyzing(true);
         setError(null);
         try {
+          const userId = getUserId();
           const response = await axios.post(`${API_BASE}/analyze`, {
             code,
-            language
+            language,
+            user_id: userId
           });
           // Navigate to the Results page, passing the full result as route state
           navigate('/results', { state: { result: response.data } });

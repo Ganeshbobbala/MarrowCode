@@ -4,16 +4,19 @@ from services.ai_engine import analyze_code_with_ai
 from services.static_analyzer import run_static_analysis
 from services.concepts import PRACTICE_CONCEPTS
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import subprocess, tempfile, os, sys, shutil, re
 
 class RunRequest(BaseModel):
     code: str
     language: str
     stdin: Optional[str] = ""
+    blind_spots: Optional[List[str]] = []
+    is_practice: bool = False
     mode: Optional[str] = "standard"
     persona: Optional[str] = "standard"
     concept_id: Optional[str] = None
+    user_id: Optional[str] = "anonymous"
 
 router = APIRouter()
 from database import supabase
@@ -57,11 +60,13 @@ async def analyze_code(submission: CodeSubmission):
             merged_feedback = static_feedback + ai_result["feedback"]
 
             result = ReviewResultResponse(
+                user_id=submission.user_id,
                 language=submission.language,
                 original_code=submission.code,
                 refactored_code=ai_result["refactored_code"],
                 scores=ai_result["scores"],
-                feedback=merged_feedback
+                feedback=merged_feedback,
+                explanations=ai_result.get("explanations")
             )
 
         # 3. Save to Supabase (Persistence)
@@ -81,12 +86,13 @@ async def analyze_code(submission: CodeSubmission):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
-async def get_history():
+async def get_history(user_id: str = "anonymous"):
     """
-    Returns previous code reviews from Supabase.
+    Returns previous code reviews from Supabase, filtered by user.
     """
     try:
-        data = supabase.table("reviews").select("*")
+        filters = {"user_id": user_id}
+        data = supabase.table("reviews").select("*", filters=filters)
         return {"history": data}
     except Exception as e:
         print(f"History fetch error: {e}")
@@ -121,6 +127,14 @@ async def run_code(request: RunRequest):
     temp_path = None
     print(f"[RUN] Lang: {lang}, Input length: {len(request.stdin or '')}")
     
+    # ── Basic Security Check ──────────────────────────────────────────────────
+    dangerous_keywords = ["rm ", "del ", "format ", "os.system", "subprocess.", "shutil.", "eval(", "exec(", "sh ", "bash "]
+    if any(kw in code for kw in dangerous_keywords):
+         return {
+            "stdout": "", 
+            "stderr": "Security Violation:\nPotentially dangerous command detected. For security reasons, system calls and file system mutations are restricted.",
+            "exit_code": 1
+        }
     if lang == "python":
         cmd = [sys.executable]
         ext = ".py"
@@ -382,14 +396,39 @@ async def evaluate_practice(request: RunRequest):
             status_msg = "STARTUP BRO MODE: LGTM, ship it! We need to hit 1M MRR. 🚀"
             alternative_text = "Who cares about technical debt? We'll refactor it when we raise our Series A. Ship it!"
 
-        return {
+        result_data = {
             "status": "success",
             "message": status_msg,
-            "mistakes": ai_feedbacks, # If there are any non-fatal mistakes/warnings
+            "mistakes": ai_feedbacks,
             "fixed_code": fixed_code_result,
             "alternative": alternative_text,
-            "explanations": ai_result.get("explanations")
+            "explanations": ai_result.get("explanations"),
+            "vibe": ai_result.get("vibe"),
+            "blind_spots": ai_result.get("blind_spots")
         }
+
+        # 3. Save to Supabase (Persistence)
+        try:
+            # We construct a ReviewResultResponse to match the schema
+            db_entry = ReviewResultResponse(
+                user_id=request.user_id,
+                language=lang,
+                original_code=code,
+                refactored_code=fixed_code_result,
+                scores=ai_result.get("scores", {"quality": 80, "readability": 80, "performance": 80}),
+                feedback=[{"line": None, "type": "suggestion", "message": m, "suggestion": ""} for m in ai_feedbacks],
+                explanations=ai_result.get("explanations"),
+                vibe=ai_result.get("vibe"),
+                blind_spots=ai_result.get("blind_spots"),
+                is_practice=True
+            )
+            db_data = db_entry.dict()
+            db_data["timestamp"] = db_data["timestamp"].isoformat()
+            supabase.table("reviews").insert(db_data)
+        except Exception as db_err:
+            print(f"Database error (Practice not saved): {db_err}")
+
+        return result_data
 
     except Exception as e:
         return {

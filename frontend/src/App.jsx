@@ -26,6 +26,7 @@ function App() {
           <div className="flex-grow mt-10">
             <Routes>
               <Route path="/" element={<Practice />} />
+              <Route path="/practice" element={<Practice />} />
               <Route path="/new" element={<NewReview />} />
               <Route path="/history" element={<History />} />
               <Route path="/results" element={<Results />} />
