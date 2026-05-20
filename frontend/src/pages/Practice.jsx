@@ -85,22 +85,17 @@ const Practice = () => {
   // We'll keep insights on the right and console at the bottom
   const activeFile = files.find(f => f.id === activeFileId) || files[0];
 
+  // Fetch concepts once on mount — no selectedConcept in deps to avoid infinite loop
   useEffect(() => {
     axios.get(`${API_BASE}/practice/concepts`)
       .then(res => {
         setConcepts(res.data);
-        if (res.data.length > 0 && !selectedConcept) {
-          setSelectedConcept(res.data[0]);
+        if (res.data.length > 0) {
+          setSelectedConcept(prev => prev ?? res.data[0]);
         }
       })
       .catch(err => console.error("Concepts fetch failed", err));
-  }, [selectedConcept]);
-
-  useEffect(() => {
-    if (!selectedConcept && concepts.length > 0) {
-      setSelectedConcept(concepts[0]);
-    }
-  }, [concepts, selectedConcept]);
+  }, []); // ← runs once only
 
   useEffect(() => {
     // Sync language state when active file changes
@@ -170,42 +165,46 @@ const Practice = () => {
   const runCode = async () => {
     setIsSubmitting(true);
     setEvalResult(null);
-    try {
-      // 1. Run the code
-      const userId = getUserId();
-      const runRes = await axios.post(`${API_BASE}/run`, {
+    const userId = getUserId();
+
+    // 🚀 Fire /run and /evaluate IN PARALLEL — ~50% faster than sequential
+    const [runResult, evalResult] = await Promise.allSettled([
+      axios.post(`${API_BASE}/run`, {
         code,
         language: language.toLowerCase(),
         stdin,
         user_id: userId
-      });
-      setOutput(runRes.data);
+      }),
+      axios.post(`${API_BASE}/practice/evaluate`, {
+        code,
+        language: language.toLowerCase(),
+        mode, persona, stdin,
+        concept_id: selectedConcept?.id,
+        user_id: userId
+      })
+    ]);
 
-      // 2. Perform AI evaluation (separated to prevent eval failure from hiding output)
-      try {
-        const evalRes = await axios.post(`${API_BASE}/practice/evaluate`, {
-          code,
-          language: language.toLowerCase(),
-          mode, persona, stdin,
-          concept_id: selectedConcept?.id,
-          user_id: userId
-        });
-        setEvalResult(evalRes.data);
-      } catch (evalErr) {
-        console.error("Evaluation failed:", evalErr);
-        // We don't overwrite output here; evalResult stays null or shows partial error in UI if needed
-        setEvalResult({ 
-          status: "error", 
-          message: "Mentor analysis currently unavailable. Execution succeeded.",
-          mistakes: ["AI Evaluation Error: " + (evalErr.response?.data?.detail || "Network Timeout")]
-        });
-      }
-    } catch (runErr) {
-      console.error("Run failed:", runErr);
-      setOutput({ stderr: "Execution Error: " + (runErr.response?.data?.detail || "Could not reach server") });
-    } finally {
-      setIsSubmitting(false);
+    // Handle run result
+    if (runResult.status === 'fulfilled') {
+      setOutput(runResult.value.data);
+    } else {
+      console.error("Run failed:", runResult.reason);
+      setOutput({ stderr: "Execution Error: " + (runResult.reason?.response?.data?.detail || "Could not reach server") });
     }
+
+    // Handle eval result
+    if (evalResult.status === 'fulfilled') {
+      setEvalResult(evalResult.value.data);
+    } else {
+      console.error("Evaluation failed:", evalResult.reason);
+      setEvalResult({
+        status: "error",
+        message: "Mentor analysis currently unavailable. Execution succeeded.",
+        mistakes: ["AI Evaluation Error: " + (evalResult.reason?.response?.data?.detail || "Network Timeout")]
+      });
+    }
+
+    setIsSubmitting(false);
   };
 
   return (

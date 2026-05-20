@@ -16,6 +16,7 @@ function App() {
         <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
           <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/10 blur-[150px] rounded-full mix-blend-screen" />
           <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-blue-500/5 blur-[150px] rounded-full mix-blend-screen" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/3 h-1/3 bg-indigo-600/3 blur-[200px] rounded-full" />
         </div>
 
         <div className="w-full z-20">
@@ -23,13 +24,17 @@ function App() {
         </div>
 
         <div className="w-full max-w-[1800px] px-4 md:px-8 z-10 flex flex-col flex-grow">
-          <div className="flex-grow mt-10">
+          <div className="flex-grow mt-6">
             <Routes>
+              {/* Default route → Practice (Compiler) */}
               <Route path="/" element={<Practice />} />
               <Route path="/practice" element={<Practice />} />
               <Route path="/new" element={<NewReview />} />
               <Route path="/history" element={<History />} />
               <Route path="/results" element={<Results />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              {/* Catch-all → Compiler */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </div>

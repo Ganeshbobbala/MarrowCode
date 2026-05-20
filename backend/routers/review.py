@@ -5,7 +5,7 @@ from services.static_analyzer import run_static_analysis
 from services.concepts import PRACTICE_CONCEPTS
 from pydantic import BaseModel
 from typing import Optional, List
-import subprocess, tempfile, os, sys, shutil, re
+import subprocess, tempfile, os, sys, shutil, re, asyncio
 
 class RunRequest(BaseModel):
     code: str
@@ -404,29 +404,33 @@ async def evaluate_practice(request: RunRequest):
             "alternative": alternative_text,
             "explanations": ai_result.get("explanations"),
             "vibe": ai_result.get("vibe"),
-            "blind_spots": ai_result.get("blind_spots")
+            "blind_spots": ai_result.get("blind_spots"),
+            "theory": ai_result.get("explanations", {}).get("logic_simplification", ""),
+            "real_world": ai_result.get("explanations", {}).get("real_world_use_case", "")
         }
 
-        # 3. Save to Supabase (Persistence)
-        try:
-            # We construct a ReviewResultResponse to match the schema
-            db_entry = ReviewResultResponse(
-                user_id=request.user_id,
-                language=lang,
-                original_code=code,
-                refactored_code=fixed_code_result,
-                scores=ai_result.get("scores", {"quality": 80, "readability": 80, "performance": 80}),
-                feedback=[{"line": None, "type": "suggestion", "message": m, "suggestion": ""} for m in ai_feedbacks],
-                explanations=ai_result.get("explanations"),
-                vibe=ai_result.get("vibe"),
-                blind_spots=ai_result.get("blind_spots"),
-                is_practice=True
-            )
-            db_data = db_entry.dict()
-            db_data["timestamp"] = db_data["timestamp"].isoformat()
-            supabase.table("reviews").insert(db_data)
-        except Exception as db_err:
-            print(f"Database error (Practice not saved): {db_err}")
+        # 3. Save to Supabase — fire-and-forget so it never blocks the response
+        async def _save_to_db():
+            try:
+                db_entry = ReviewResultResponse(
+                    user_id=request.user_id,
+                    language=lang,
+                    original_code=code,
+                    refactored_code=fixed_code_result,
+                    scores=ai_result.get("scores", {"quality": 80, "readability": 80, "performance": 80}),
+                    feedback=[{"line": None, "type": "suggestion", "message": m, "suggestion": ""} for m in ai_feedbacks],
+                    explanations=ai_result.get("explanations"),
+                    vibe=ai_result.get("vibe"),
+                    blind_spots=ai_result.get("blind_spots"),
+                    is_practice=True
+                )
+                db_data = db_entry.dict()
+                db_data["timestamp"] = db_data["timestamp"].isoformat()
+                supabase.table("reviews").insert(db_data)
+            except Exception as db_err:
+                print(f"Database error (Practice not saved): {db_err}")
+
+        asyncio.create_task(_save_to_db())
 
         return result_data
 
