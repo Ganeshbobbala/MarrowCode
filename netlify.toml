@@ -1,15 +1,9 @@
-# Netlify configuration for MarroeCode frontend SPA
+# Netlify configuration for MarroeCode
+# We serve the pre-built dist folder directly — no build step needed on Netlify
 
 [build]
-  # Build command runs from the frontend directory
-  base    = "frontend"
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "18"
-  # Set your Render backend URL here (update after deploying backend)
-  VITE_API_BASEURL = "https://marroecode-api.onrender.com/api"
+  # No build command — we commit the built dist directly
+  publish = "frontend/dist"
 
 # SPA fallback — all routes serve index.html (React Router handles them)
 [[redirects]]
@@ -21,11 +15,11 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options         = "DENY"
-    X-Content-Type-Options  = "nosniff"
-    Referrer-Policy         = "strict-origin-when-cross-origin"
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
 
-# Cache static assets aggressively
+# Cache static assets aggressively (immutable hash-named files)
 [[headers]]
   for = "/assets/*"
   [headers.values]
